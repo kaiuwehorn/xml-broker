@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
@@ -18,6 +19,8 @@ public abstract class EventParser {
 	public void parseStream(InputStream in) {
 
 		XMLInputFactory f = XMLInputFactory.newInstance();
+		f.setProperty(XMLInputFactory.IS_COALESCING, Boolean.FALSE);
+		
 		XMLStreamReader r;
 
 		try {
@@ -29,11 +32,9 @@ public abstract class EventParser {
 			StringBuilder event = new StringBuilder(0x1000);
 
 			while (r.hasNext()) {
-				r.next();
+				switch (r.next()) {
 
-				switch (r.getEventType()) {
-
-				case XMLEvent.START_ELEMENT:
+				case XMLStreamConstants.START_ELEMENT:
 					level++;
 
 					// store top-level event information
@@ -58,7 +59,7 @@ public abstract class EventParser {
 					}
 					break;
 
-				case XMLEvent.END_ELEMENT:
+				case XMLStreamConstants.END_ELEMENT:
 					level--;
 
 					if (level >= 1)
@@ -71,7 +72,11 @@ public abstract class EventParser {
 					}
 					break;
 
-				case XMLEvent.CHARACTERS:
+				case XMLStreamConstants.CDATA:
+					logger.warning("CDATA-FOUND!!");
+					break;
+					
+				case XMLStreamConstants.CHARACTERS:
 					if (level >= 2) {
 						int start = r.getTextStart();
 						int length = r.getTextLength();
@@ -79,8 +84,8 @@ public abstract class EventParser {
 								length);
 						event.append(text);
 					}
-				default:
 					break;
+				default:
 				}
 			}
 
